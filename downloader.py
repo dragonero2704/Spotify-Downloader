@@ -222,20 +222,25 @@ def attachMetadata(file, metadata):
 def main(urls = None):
     # check input file
     if str(input("Input from file y/n: ")) == 'y':
-        with open("input.txt", 'r') as file:
-            urls = []
-            lines = file.readlines()
-            for line in lines:
-                line = line.strip()
-                if line.startswith('#') or line.startswith('\n') or len(line) == 0:
-                    # ignore lines with #
-                    continue
-                else:
-                    arg = line.split(' ')[0]
-                    urls.append(arg)
-                    line = file.readline()
-            
-            file.close()
+
+        if os.path.exists('input.txt'):
+            with open("input.txt", 'r') as file:
+                urls = []
+                lines = file.readlines()
+                for line in lines:
+                    line = line.strip()
+                    if line.startswith('#') or line.startswith('\n') or len(line) == 0:
+                        # ignore lines with #
+                        continue
+                    else:
+                        arg = line.split(' ')[0]
+                        urls.append(arg)
+                        line = file.readline()
+                
+                file.close()
+        else:
+            print(f"input.txt not found in {dir}")
+            print("Please use manual input")
 
     if urls is None or len(urls) == 0:
         urls = str(input("Insert spotify or youtube url(s): ")).split(' ')
