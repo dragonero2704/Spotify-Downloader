@@ -1,22 +1,100 @@
-from time import sleep, time
-import pytube
-import spotipy
-from tabulate import tabulate
-from spotipy.oauth2 import SpotifyClientCredentials
 import os
-import youtubesearchpython as ytsearch
-from mutagen.mp4 import MP4
+from argparse import ArgumentParser, RawTextHelpFormatter
+
+title = '''
+       /$$                                   /$$                          /$$                                       
+      | $$                                  | $$                         | $$                                       
+  /$$$$$$$  /$$$$$$  /$$  /$$  /$$ /$$$$$$$ | $$  /$$$$$$  /$$$$$$   /$$$$$$$  /$$$$$$   /$$$$$$  /$$$$$$  /$$   /$$
+ /$$__  $$ /$$__  $$| $$ | $$ | $$| $$__  $$| $$ /$$__  $$|____  $$ /$$__  $$ /$$__  $$ /$$__  $$/$$__  $$| $$  | $$
+| $$  | $$| $$  \ $$| $$ | $$ | $$| $$  \ $$| $$| $$  \ $$ /$$$$$$$| $$  | $$| $$$$$$$$| $$  \__/ $$  \ $$| $$  | $$
+| $$  | $$| $$  | $$| $$ | $$ | $$| $$  | $$| $$| $$  | $$/$$__  $$| $$  | $$| $$_____/| $$     | $$  | $$| $$  | $$
+|  $$$$$$$|  $$$$$$/|  $$$$$/$$$$/| $$  | $$| $$|  $$$$$$/  $$$$$$$|  $$$$$$$|  $$$$$$$| $$/$$  | $$$$$$$/|  $$$$$$$
+ \_______/ \______/  \_____/\___/ |__/  |__/|__/ \______/ \_______/ \_______/ \_______/|__/__/  | $$____/  \____  $$
+                                                                                                | $$       /$$  | $$
+                                                                                                | $$      |  $$$$$$/
+                                                                                                |__/       \______/ 
+
+Author: dragonero2704
+Github: none
+Version: 2
+'''
+
+dir = os.path.dirname(os.path.realpath(__file__))
+# check dependencies
+if os.name == "posix":
+    inst = "sudo pip install {}"
+elif os.name == "nt":
+    inst = "pip install {}"
+
+print("Checking dependencies")
+print("[If something is missing I will install it for you!]")
 
 
-print("Logging into Spotify...", end=' ')
+
+try:
+    from termcolor import cprint
+    
+except:
+    print("Missing termcolor")
+    os.system(inst.format("termcolor"))
+    from termcolor import cprint
+
+try:
+    import colorama
+except:
+    os.system(inst.format("colorama"))
+    import colorama
+finally:
+    if os.name == "nt":
+        colorama.init()
+
+try:
+    import pytube
+except:
+    cprint("Missing pytube", "yellow")
+    os.system(inst.format("pytube"))
+    import pytube
+
+try:
+    import spotipy
+    from spotipy.oauth2 import SpotifyClientCredentials
+except:
+    cprint("Missing spotipy", "yellow")
+    os.system(inst.format("spotipy"))
+    import spotipy
+    from spotipy.oauth2 import SpotifyClientCredentials
+
+
+try:
+    from tabulate import tabulate
+except:
+    cprint("Missing tabulate", "yellow")
+    os.system(inst.format("tabulate"))
+    from tabulate import tabulate
+
+
+try:
+    from mutagen.mp4 import MP4
+except:
+    cprint("Missing mutagen", "yellow")
+    os.system(inst.format("mutagen"))
+    from mutagen.mp4 import MP4
+
+
+try:
+    import youtubesearchpython as ytsearch
+except:
+    cprint("Missing youtubesearchpython", "yellow")
+    os.system(inst.format("youtubesearchpython"))
+    import youtubesearchpython as ytsearch
+
+cprint("ok", "green")
+
+cprint("Logging into Spotify...", "blue", end=" ")
 
 spotify = spotipy.Spotify(client_credentials_manager=SpotifyClientCredentials(
     "914307bab744408595602cf269ec892c", "4dd6a891d3b94e2f93a68734d5ded526"))
-print("Done")
-
-dir = os.path.dirname(os.path.realpath(__file__))
-
-subdir = ''
+cprint("Done", "blue")
 
 
 def on_progress(stream, chunk, bytes_remaining):
@@ -25,17 +103,15 @@ def on_progress(stream, chunk, bytes_remaining):
     pct_completed = bytes_downloaded / total_size * 100
     print(f"{round(pct_completed, 0)}%", end='\t')
 
-
 def getUrlType(url):
+    if url.startswith("http") == False and url.startswith("https") == False:
+        raise Exception(f"Invalid link: {url}")
+
     url = str(url)
     url = url.split('/')
-    type = url[-2]
-
     url.remove('')
-
-    if 'http' not in url[0] or 'https' not in url[0]:
-        return False
-
+    type = url[-2]
+    
     if type == 'playlist':
         return 'sp_playlist'
     if type == 'album':
@@ -45,7 +121,7 @@ def getUrlType(url):
     if 'youtube' in url[1]:
         return 'yt_track'
 
-    return False
+    raise Exception(f"Invalid link: {url}")
 
 
 def normalize(title):
@@ -56,16 +132,16 @@ def normalize(title):
     return title
 
 
-def yt_download(url, urlType=None):
+def yt_download(url,args, urlType=None):
     if urlType == None:
         urlType = getUrlType(url)
 
     ytVideo = pytube.YouTube(url, on_progress_callback=on_progress)
-
     downdir = dir+'/ex'
+    if args.output:
+        downdir = args.output
     # itag 139 abr="48kbs" low quality
     # ->itag 140<- abr="128kbs" higher quality
-
     print(f"{ytVideo.title}\tdownloading", end='\t')
 
     if os.path.exists(f"{downdir}/{normalize(ytVideo.title)}.mp4") == False:
@@ -73,18 +149,16 @@ def yt_download(url, urlType=None):
             ytVideo.streams.get_audio_only(subtype="mp4").download(
                 downdir, filename=f"{normalize(ytVideo.title)}.mp4", skip_existing=True)
         except:
-            print('Error', end='\t')
+            cprint('Error\t', "red")
     
     attachMetadata(f"{downdir}/{normalize(ytVideo.title)}.mp4", ytVideo)
-    print('\n', end='')
-    print('Done')
+    
 
 
-def sp_download(url, urlType=None):
+def sp_download(url,args, urlType=None):
     if urlType == None:
         urlType = getUrlType(url)
 
-    # print(f"{urlType} URL detected")
     print("Fetching...")
 
     videosToSearch = []
@@ -149,19 +223,21 @@ def sp_download(url, urlType=None):
         videosToSearch.append(
             {'name': track['name'], 'author': track['artists'][0]['name'], 'album': track['album']['name']})
 
-    downdir = dir+'/ex'+subdir
+    if args.output:
+        downdir = args.output+subdir
+    else:
+        downdir = dir+'/ex'+subdir
 
     print('Track list:')
 
     print(tabulate(videosToSearch, headers="keys", tablefmt="pretty"))
 
-    sleep(1)
 
-    print("Searching on YT...")
+    cprint("Searching on YT...", "blue", end='')
     totalVideos = len(videosToSearch)
     i = 1
     for video in videosToSearch:
-        print(f"{i} of {totalVideos}: {video['name']} by {video['author']}", end="\t")
+        print(f"\n{i} of {totalVideos}: {video['name']} by {video['author']}", end="\t")
         i += 1
         # ytVideo = pytube.Search(video['name'] +' '+ video['author']).results[0]
         searchError = False
@@ -183,7 +259,7 @@ def sp_download(url, urlType=None):
                 c += 1
 
         ytVideo = pytube.YouTube(
-            sres['link'], on_progress_callback=on_progress, on_complete_callback=print("Done", end='\t'))
+            sres['link'], on_progress_callback=on_progress)
 
         # itag 139 abr="48kbs" low quality
         # ->itag 140<- abr="128kbs" higher quality
@@ -194,37 +270,55 @@ def sp_download(url, urlType=None):
             try:
                 ytVideo.streams.get_audio_only(subtype="mp4").download(
                     downdir, filename=f"{normalize(video['name'])}.mp4", skip_existing=True)
-            except:
-                print('Error', end='\t')
+            except Exception as e:
+                cprint('Error: {}'.format(e), "red", end='')
+            else:
+                attachMetadata(f"{downdir}/{normalize(video['name'])}.mp4", video)
 
-        attachMetadata(f"{downdir}/{normalize(video['name'])}.mp4", video)
-        print('\n', end='')
-        # print('Done')
+        
 
 def attachMetadata(file, metadata):
     # metadata=dict()
-    metadata = metadata.__dict__
+    
     f = MP4(file)
-    tagmap = dict({
+    tagmap = {
     "author" :"\xa9ART",
     "name":"\xa9nam",
     "title":"\xa9nam",
     "album":"\xa9alb",
-    "genre":"\xa9gen"})
+    "genre":"\xa9gen"}
 
-    for key in metadata.keys():
-        if metadata[key] is not None and key in tagmap.keys():
+    for key in metadata:
+        if metadata[key] is not None and key in tagmap:
             f[tagmap[key]] = metadata[key]
     
     f.save()
 
-
 def main(urls = None):
-    # check input file
-    if str(input("Input from file y/n: ")) == 'y':
+    parser = ArgumentParser(
+        prog=__file__.split('\\')[-1],
+        usage="./%(prog)s -f <inputfile path> -o <outputdirectory> -i <url(s)>",
+        formatter_class=RawTextHelpFormatter,
+        description=cprint(title, "white", attrs=["bold"])
+    )
 
-        if os.path.exists('input.txt'):
-            with open("input.txt", 'r') as file:
+    inputopt = parser.add_argument_group("input")
+    outputopt = parser.add_argument_group("output")
+
+    inputopt.add_argument('-f', '--file', dest="file", action="store", metavar="<Path to input file>", help="The path to the .txt input file")
+    inputopt.add_argument("-l", '--link', '--url', dest="url", action="append", metavar="<url to youtube or spotify track>", help="To input multiple links: -l <url> -l <url>" )
+    outputopt.add_argument('-o','--output', dest="output", action="store", metavar="<path to output dir>", default=f'{dir}/ex', help="The path to your output directory. Default is set to './ex'")
+    outputopt.add_argument('-ao', '--audio-only', dest="audioOnly", action="store_true", help="If this flag is present, only the audio will be downloaded")
+    args = parser.parse_args()
+
+    if args.output:
+        if os.path.exists(args.output) == False:
+            cprint(f"{args.output} not found", "red")
+
+    if args.file:
+    # check input file
+        if os.path.exists(args.file):
+            with open(args.file, 'r') as file:
                 urls = []
                 lines = file.readlines()
                 for line in lines:
@@ -233,32 +327,37 @@ def main(urls = None):
                         # ignore lines with #
                         continue
                     else:
-                        arg = line.split(' ')[0]
-                        urls.append(arg)
-                        line = file.readline()
+                        arg = line.split(' ')
+                        urls.extend(arg)
                 
                 file.close()
         else:
-            print(f"input.txt not found in {dir}")
-            print("Please use manual input")
-
-    if urls is None or len(urls) == 0:
+            cprint(f"{args.file} not found", "red")
+            exit()
+    elif args.url is not None:
+        urls = args.url
+    else:
         urls = str(input("Insert spotify or youtube url(s): ")).split(' ')
-    print(urls)
-    # getopt.getopt(sys.argv[1:], )
+
+    if urls[0] == '\n':
+        cprint("No urls inserted, closing", "red")
+        exit()
 
     for url in urls:
-        urlType = getUrlType(url)
+        try:
+            urlType = getUrlType(url)
+        except Exception as e:
+            cprint(e, "red")
+            continue
         if urlType:
             platform = urlType.split('_')[0]
             if platform == 'sp':
-                sp_download(url, urlType=urlType)
+                sp_download(url, args, urlType=urlType)
             if platform == 'yt':
-                yt_download(url, urlType=urlType)
+                yt_download(url, args, urlType=urlType)
         else:
-            print(f"{url} is not a url")
+            cprint(f"{url} is not a url", "red")
 
 
 if __name__ == "__main__":
-    print("File executed as main")
     main()
