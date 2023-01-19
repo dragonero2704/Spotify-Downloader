@@ -15,7 +15,7 @@ title = '''
                                                                                                 |__/       \______/ 
 
 Author: dragonero2704
-Github: none
+Github: https://github.com/dragonero2704/Spotify-Downloader
 Version: 2
 '''
 
@@ -29,11 +29,8 @@ elif os.name == "nt":
 print("Checking dependencies")
 print("[If something is missing I will install it for you!]")
 
-
-
 try:
     from termcolor import cprint
-    
 except:
     print("Missing termcolor")
     os.system(inst.format("termcolor"))
@@ -88,13 +85,42 @@ except:
     os.system(inst.format("youtubesearchpython"))
     import youtubesearchpython as ytsearch
 
-cprint("ok", "green")
+try:
+    import json
+except:
+    cprint("Missing json", "yellow")
+    os.system(inst.format("json"))
+    import json
 
-cprint("Logging into Spotify...", "blue", end=" ")
+try:
+    import dotenv
+except:
+    cprint("Missing python-dotenv", "yellow")
+    os.system(inst.format("python-dotenv"))
+    import dotenv
 
-spotify = spotipy.Spotify(client_credentials_manager=SpotifyClientCredentials(
-    "914307bab744408595602cf269ec892c", "4dd6a891d3b94e2f93a68734d5ded526"))
-cprint("Done", "blue")
+cprint("Dependencies: ok", "green")
+pathToEnv = dotenv.find_dotenv()
+if pathToEnv != '':
+    dotenv.load_dotenv(pathToEnv)
+    spotifyClientId = os.getenv('spotifyClientId')
+    spotifySecret = os.getenv('spotifySecret')
+elif os.path.exists("./config.json"):
+    config = json.load(open("config.json"))
+    spotifyClientId = config['spotifyClientId']
+    spotifySecret = config['spotifySecret']
+else:
+    raise RuntimeError(".env or config.json not found for spotify credentials")
+# config = json.load(open("config.json"))
+# print(config)
+cprint("Logging into Spotify:", "blue", end=" ")
+try:
+    spotify = spotipy.Spotify(client_credentials_manager=SpotifyClientCredentials(
+    spotifyClientId, spotifySecret))
+except:
+    cprint("failed", "red")
+else:
+    cprint("success", "green")
 
 
 def on_progress(stream, chunk, bytes_remaining):
@@ -299,7 +325,7 @@ def main(urls = None):
         prog=__file__.split('\\')[-1],
         usage="./%(prog)s -f <inputfile path> -o <outputdirectory> -i <url(s)>",
         formatter_class=RawTextHelpFormatter,
-        description=cprint(title, "white", attrs=["bold"])
+        description=cprint(title, "white", attrs=["bold"]),
     )
 
     inputopt = parser.add_argument_group("input")
@@ -309,6 +335,7 @@ def main(urls = None):
     inputopt.add_argument("-l", '--link', '--url', dest="url", action="append", metavar="<url to youtube or spotify track>", help="To input multiple links: -l <url> -l <url>" )
     outputopt.add_argument('-o','--output', dest="output", action="store", metavar="<path to output dir>", default=f'{dir}/ex', help="The path to your output directory. Default is set to './ex'")
     outputopt.add_argument('-ao', '--audio-only', dest="audioOnly", action="store_true", help="If this flag is present, only the audio will be downloaded")
+
     args = parser.parse_args()
 
     if args.output:
