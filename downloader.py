@@ -1,5 +1,6 @@
 import os
 from argparse import ArgumentParser, RawTextHelpFormatter
+# from warnings import warn
 
 title = '''
        /$$                                   /$$                          /$$                                       
@@ -110,7 +111,7 @@ elif os.path.exists("./config.json"):
     spotifyClientId = config['spotifyClientId']
     spotifySecret = config['spotifySecret']
 else:
-    raise RuntimeError(".env or config.json not found for spotify credentials")
+    cprint("Warning: .env or config.json not found for spotify credentials", "yellow")
 # config = json.load(open("config.json"))
 # print(config)
 cprint("Logging into Spotify:", "blue", end=" ")
@@ -304,7 +305,8 @@ def sp_download(url,args, urlType=None):
         
 
 def attachMetadata(file, metadata):
-    # metadata=dict()
+    
+    metadata = metadata.__dict__
     
     f = MP4(file)
     tagmap = {
