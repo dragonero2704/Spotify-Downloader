@@ -120,6 +120,7 @@ try:
     spotifyClientId, spotifySecret))
 except:
     cprint("failed", "red")
+    spotify = False
 else:
     cprint("success", "green")
 
@@ -183,6 +184,10 @@ def yt_download(url,args, urlType=None):
 
 
 def sp_download(url,args, urlType=None):
+    if not spotify:
+        cprint("Error: Spotify not logged in", "red")
+        return
+
     if urlType == None:
         urlType = getUrlType(url)
 
