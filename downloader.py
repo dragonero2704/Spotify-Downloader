@@ -310,9 +310,10 @@ def sp_download(url,args, urlType=None):
         
 
 def attachMetadata(file, metadata):
-    
-    metadata = metadata.__dict__
-    
+    try:
+        metadata = metadata.__dict__
+    except:
+        pass
     f = MP4(file)
     tagmap = {
     "author" :"\xa9ART",

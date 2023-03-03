@@ -3,3 +3,4 @@ ex/*
 input.txt
 .env
 config.json
+.cache
